@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
 
-  <title>Warframe Info Site</title>
+  <title>{% block title %}{% endblock %}</title>
   <meta name="description" content="A site to provide information about the game called Warframe.">
   <meta name="author" content="Alento Ghostflame">
 
@@ -14,10 +14,13 @@
 
 <body>
     <ul class="nav_bar_list">
-        <li class="nav_bar_listing"><button class="nav_bar_button">Test</button></li>
-        <li class="nav_bar_listing"><button class="nav_bar_button">Test 2</button></li>
-        <li class="nav_bar_listing"><button class="nav_bar_button">Test 3</button></li>
+        <li class="nav_bar_listing"><button class="nav_bar_button">Home</button></li>
+        <li class="nav_bar_listing"><button class="nav_bar_button">Warframes</button></li>
+        <li class="nav_bar_listing"><button class="nav_bar_button">Weapons</button></li>
+        <li class="nav_bar_listing"><button class="nav_bar_button">Mods</button></li>
     </ul>
+    {% block body %}
+    {% endblock %}
   Hello World!
 </body>
 </html>
