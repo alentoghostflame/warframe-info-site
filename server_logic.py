@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 
 
 website = Flask(__name__)
@@ -7,4 +7,4 @@ website = Flask(__name__)
 @website.route("/")
 @website.route("/index")
 def index():
-    return "Hello, World!"
+    return render_template("base.html")
