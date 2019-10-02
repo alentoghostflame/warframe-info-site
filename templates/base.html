@@ -14,14 +14,17 @@
 
 <body>
     <ul class="nav_bar_list">
-        <li class="nav_bar_listing"><button class="nav_bar_button">Home</button></li>
-        <li class="nav_bar_listing"><button class="nav_bar_button">Warframes</button></li>
-        <li class="nav_bar_listing"><button class="nav_bar_button">Weapons</button></li>
-        <li class="nav_bar_listing"><button class="nav_bar_button">Mods</button></li>
+        <li class="nav_bar_listing"><a href="../" class="nav_bar_link">Home</a></li>
+        <li class="nav_bar_listing"><a href="warframes" class="nav_bar_link">Warframes</a></li>
+        <li class="nav_bar_listing"><a href="weapons" class="nav_bar_link">Weapons</a></li>
+        <li class="nav_bar_listing"><a href="mods" class="nav_bar_link">Mods</a></li>
     </ul>
     {% block body %}
     {% endblock %}
-  Hello World!
+    <div style="text-align: center;">
+        <hr style="border: 5px solid #282828">
+        This is a footer I guess
+    </div>
 </body>
 </html>
 

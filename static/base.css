@@ -4,7 +4,7 @@ body {
 }
 .nav_bar_list {
     list-style-type: none;
-    background-color: #222222;
+    background-color: #282828;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -24,6 +24,18 @@ body {
     font-size: 16px;
     padding: 15px 32px;
 
+}
+.nav_bar_link {
+    display: inline-block;
+    background-color: #8d721e;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 15px 32px;
+}
+.nav_bar_link:hover {
+    background-color: goldenrod;
 }
 .nav_bar_button:hover {
     background-color: goldenrod;

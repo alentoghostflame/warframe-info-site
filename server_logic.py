@@ -9,6 +9,12 @@ def homepage():
     return render_template("homepage.html")
 
 
-@website.route("/<path:path>")
+@website.route("/warframes", strict_slashes=False)
+def warframe_list():
+    return render_template("warframe_list.html")
+
+
+@website.route("/<path:path>", strict_slashes=False)
 def catch_all(path):
+    print("User tried to go to /{}".format(path))
     return redirect(url_for("homepage"))
