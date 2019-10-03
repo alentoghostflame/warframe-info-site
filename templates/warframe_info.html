@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %} Warframe List {% endblock %}
+{% block title %} {{ warframe_data["name"] }} {% endblock %}
 {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='warframe_info.css') }}">
 {% endblock %}
@@ -11,16 +11,16 @@
                 {% if i != 0 and warframe_data[dict_name][i] == warframe_data[dict_name][i - 1] %}
                     <td>---</td>
                 {% else %}
-                    <td>{{warframe_data[dict_name][i]}}</td>
+                    <td>{{ warframe_data[dict_name][i] }}</td>
                 {% endif %}
             {% endfor %}
         </tr>
     {%- endmacro %}
     <div class="bigger_div">
-        {{warframe_data["name"]}}
+        {{ warframe_data["name"] }}
     </div>
     <div class="main_div">
-        {{warframe_data["description"]}}
+        {{ warframe_data["description"] }}
         <br>
         <table>
             <tr>
