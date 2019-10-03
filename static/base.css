@@ -26,3 +26,7 @@ body {
 .nav_bar_link:hover {
     background-color: goldenrod;
 }
+.bigger_div {
+    text-align: center;
+    font-size: 150%;
+}
