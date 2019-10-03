@@ -6,5 +6,5 @@ base_health: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 1
   200]
 base_shields: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
   50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 75]
-description: Default Description
-name: Not Default Name
+description: I have a table below me, ha ha!
+name: Stupid Warframe Name
