@@ -1,0 +1,13 @@
+table, th, td {
+    border: 1px solid #505050;
+    border-collapse: collapse;
+}
+td:nth-child(even), th:nth-child(even) {
+  background-color: #000000;
+}
+td:nth-child(odd), th:nth-child(odd) {
+  background-color: #202020;
+}
+.main_div {
+    background-color: #282828;
+}

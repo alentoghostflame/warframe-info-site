@@ -5,8 +5,8 @@ import yaml
 DEFAULT_BASIC_OBJECT: dict = {
     "name": "Default Name",
     "description": "Default Description",
-    "base_heath": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
-                   100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 200],
+    "base_health": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
+                    100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 200],
     "base_shields": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
                      50, 50, 50, 50, 50, 75],
     "base_energy": [150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150,
@@ -31,7 +31,9 @@ class ObjectStorage:
 class WarframeList:
     def __init__(self):
         self.raw: list = []
+        self.warframes: dict = {}
         self.names: list = []
+        self.file_names: list = []
 
     def load_all(self):
         file_list = listdir("data/warframes/")
@@ -42,9 +44,10 @@ class WarframeList:
         warframe = BasicObject()
         warframe.load_from_file(file_path)
         self.raw.append(warframe)
-        self.names.append([warframe.get("name", "Name Not Found!"), file_path.split("/")[-1]])
-        # self.names.append(warframe.get("name", "Name Not Found!"))
-        # self.file_names.append(file_path.split("/")[-1])
+        # self.names.append([warframe.get("name", "Name Not Found!"), file_path.split("/")[-1].rsplit(".")[0]])
+        self.names.append(warframe.get("name", "Name not found!"))
+        self.file_names.append(file_path.split("/")[-1].rsplit(".", 1)[0])
+        self.warframes[file_path.split("/")[-1].rsplit(".", 1)[0]] = warframe
 
 
 class BasicObject(dict):

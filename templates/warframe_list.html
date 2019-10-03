@@ -7,8 +7,8 @@
     <div class="bigger_div">
         List of all available Warframes:
         <ul class="warframe_list">
-        {% for name in warframe_names %}
-            <li class="warframe_listing"><a class="warframe_link">{{name[0]}}</a></li>
+        {% for i in range(warframe_names|length) %}
+            <li class="warframe_listing"><a class="warframe_link" href="warframes/{{file_names[i]}}">{{warframe_names[i]}}</a></li>
         {% endfor %}
         </ul>
     </div>

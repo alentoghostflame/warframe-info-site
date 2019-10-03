@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %} Warframe List {% endblock %}
+{% block head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='warframe_info.css') }}">
+{% endblock %}
+{% block body %}
+    {% macro stat_table_row(name, dict_name) -%}
+        <tr>
+            <th>{{name}}</th>
+            {% for i in range(31) %}
+                {% if i != 0 and warframe_data[dict_name][i] == warframe_data[dict_name][i - 1] %}
+                    <td>---</td>
+                {% else %}
+                    <td>{{warframe_data[dict_name][i]}}</td>
+                {% endif %}
+            {% endfor %}
+        </tr>
+    {%- endmacro %}
+    <div class="bigger_div">
+        {{warframe_data["name"]}}
+    </div>
+    <div class="main_div">
+        {{warframe_data["description"]}}
+        <br>
+        <table>
+            <tr>
+                <th>Rank</th>
+                {% for i in range(31) %}
+                    <th>{{i}}</th>
+                {% endfor %}
+            </tr>
+            {{ stat_table_row("Base Health", "base_health") }}
+            {{ stat_table_row("Base Shields", "base_shields") }}
+            {{ stat_table_row("Base Energy", "base_energy") }}
+        </table>
+    </div>
+{% endblock %}

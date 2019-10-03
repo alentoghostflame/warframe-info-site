@@ -15,15 +15,16 @@ def homepage():
 @website.route("/warframes/<path:path>", strict_slashes=False)
 def warframes(path):
     print("Warframes: User tried to go to /warframes/{}".format(path))
-    if path.lower in storage.warframe_list.names:
-        return "lol hi there."
+    if path in storage.warframe_list.file_names:
+        return render_template("warframe_info.html", warframe_data=storage.warframe_list.warframes[path])
     else:
         return redirect(url_for("warframe_list"))
 
 
 @website.route("/warframes", strict_slashes=False)
 def warframe_list():
-    return render_template("warframe_list.html", warframe_names=storage.warframe_list.names)
+    return render_template("warframe_list.html", warframe_names=storage.warframe_list.names,
+                           file_names=storage.warframe_list.file_names)
 
 
 @website.route("/<path:path>", strict_slashes=False)
