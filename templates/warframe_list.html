@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% block title %} Warframe List {% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='warframe_list.css') }}">
+{% endblock %}
 {% block body %}
-    <div style="text-align: center;">
-        Hello, this is the Warframe List I guess.
+    <div style="text-align: center; font-size: 150%">
+        List of all available Warframes:
+        <ul class="warframe_list">
+        {% for name in warframe_names %}
+            <li class="warframe_listing"><a class="warframe_link">{{name[0]}}</a></li>
+        {% endfor %}
+        </ul>
     </div>
 {% endblock %}
