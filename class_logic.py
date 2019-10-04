@@ -33,17 +33,22 @@ class DropTableParser(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
         self.storage: dict = {}
-        self.missions: set = set()
+        self.basic_missions: set = set()
+        self.open_world_missions: set = set()
         self.relics: set = set()
 
         self.selected_type: str = ""
 
         self.mission_location: str = ""
         self.mission_rotation: str = "default"
+        self.mission_stage: str = "default"
+        self.mod_drop_chance: str = ""
+        self.enemy_name: str = ""
+
         self.item_name: str = ""
         self.drop_chance = ""
+
         self.temp_tag: str = ""
-        self.temp_attribute: tuple = ()
 
     def read_file(self, file_path: str):
         self.feed(open(file_path, "r").read())
@@ -52,13 +57,18 @@ class DropTableParser(HTMLParser):
         # print("Start tag: {}   Attributes: {}".format(tag, attrs))
         if tag == "h3":
             if attrs == [("id", "missionRewards")] or attrs == [("id", "keyRewards")] or \
-                    attrs == [("id", "transientRewards")]:
-                self.selected_type = "mission"
+                    attrs == [("id", "transientRewards")] or attrs == [("id", "sortieRewards")]:
+                print("Basic mission encountered:", attrs)
+                self.selected_type = "basic_mission"
+            elif attrs == [("id", "cetusRewards")] or attrs == [("id", "solarisRewards")]:
+                print("Open world mission encountered:", attrs)
+                self.selected_type = "open_world_mission"
+            elif attrs == [("id", "modByAvatar")]:
+                self.selected_type = "enemy_mod_drops"
             else:
                 self.selected_type = "other"
 
         self.temp_tag = tag
-        self.temp_attribute = attrs
 
     def handle_endtag(self, tag):
         # print("End tag: {}".format(tag))
@@ -67,31 +77,94 @@ class DropTableParser(HTMLParser):
     def handle_data(self, data):
         # print("Data: {}".format(data))
         if data.rstrip():
-            if self.selected_type == "mission":
-                if self.temp_tag == "th":
-                    if "Rotation" in data:
-                        # Rotation in a mission; 1, 2, and 3 typically.
-                        self.mission_rotation = data
-                        self.storage[self.mission_location][self.mission_rotation] = []
-                    else:
-                        # Should be the name or location of the mission.
-                        self.mission_location = data
-                        self.missions.add(self.mission_location)
-                        self.storage[self.mission_location] = {}
-                        self.storage[self.mission_location]["default"] = []
-                        self.mission_rotation = "default"
-                elif self.temp_tag == "td":
-                    if "%" in data:
-                        # It's the drop chance of an item.
-                        self.drop_chance = data
-                    else:
-                        # Should be the name of the item.
-                        self.item_name = data
-                if self.item_name and self.drop_chance:
-                    self.storage[self.mission_location][self.mission_rotation].append({"item_name": self.item_name,
-                                                                                       "drop_chance": self.drop_chance})
-                    self.item_name = ""
-                    self.drop_chance = ""
+            if self.selected_type == "basic_mission":
+                self.handle_basic_mission(data)
+            elif self.selected_type == "open_world_mission":
+                self.handle_open_world_mission(data)
+            elif self.selected_type == "enemy_mod_drops":
+                self.handle_enemy_mod_drops(data)
+
+    def handle_basic_mission(self, data):
+        if self.temp_tag == "th":
+            if "Rotation" in data:
+                # Rotation in a mission; 1, 2, and 3 typically.
+                self.mission_rotation = data
+                self.storage[self.mission_location][self.mission_rotation] = []
+            else:
+                # Should be the name or location of the mission.
+                self.mission_location = data
+                self.basic_missions.add(self.mission_location)
+                self.storage[self.mission_location] = {}
+                self.storage[self.mission_location]["default"] = []
+                self.mission_rotation = "default"
+        elif self.temp_tag == "td":
+            if "%" in data:
+                # It's the drop chance of an item.
+                self.drop_chance = data
+            else:
+                # Should be the name of the item.
+                self.item_name = data
+        if self.item_name and self.drop_chance:
+            self.storage[self.mission_location][self.mission_rotation].append({"item_name": self.item_name,
+                                                                               "drop_chance": self.drop_chance})
+            self.item_name = ""
+            self.drop_chance = ""
+
+    def handle_open_world_mission(self, data: str):
+        if self.temp_tag == "th":
+            if "Cetus Bounty" in data or "Ghoul Bounty" in data or \
+                    "Orb Vallis Bounty" in data or "PROFIT-TAKER" in data:
+                # This should be the mission name/level. Example, Level 5 - 15 Cetus Bounty
+                self.mission_location = data
+                self.open_world_missions.add(self.mission_location)
+                self.storage[self.mission_location] = {}
+                # self.storage[self.mission_location]["default"] = []
+                # self.mission_rotation = "default"
+            elif "Rotation" in data or "Completion" in data:
+                # This should be the mission rotation. Example, Rotation B
+                self.mission_rotation = data
+                self.storage[self.mission_location][self.mission_rotation] = {}
+            elif "Stage" in data:
+                # This should be the stage of the mission. Example, Stage 4 of 5
+                self.mission_stage = data
+                self.storage[self.mission_location][self.mission_rotation][self.mission_stage] = []
+            else:
+                print("SOMETHING TERRIBLE HAPPENED:", data)
+        elif self.temp_tag == "td":
+            if "%" in data:
+                # It's the drop chance of an item.
+                self.drop_chance = data
+            else:
+                # Should be the name of the item.
+                self.item_name = data
+        if self.item_name and self.drop_chance:
+            self.storage[self.mission_location][self.mission_rotation][self.mission_stage].append(
+                {"item_name": self.item_name, "drop_chance": self.drop_chance})
+            self.item_name = ""
+            self.drop_chance = ""
+
+    def handle_enemy_mod_drops(self, data: str):
+        if self.temp_tag == "th":
+            if "%" in data:
+                # This should be the chance for a mod to drop.
+                self.mod_drop_chance = data
+                self.storage[self.enemy_name][self.mod_drop_chance] = []
+            else:
+                # This sould be the name of an enemy
+                self.enemy_name = data
+                self.storage[self.enemy_name] = {}
+        elif self.temp_tag == "td":
+            if "%" in data:
+                # It's the drop chance of an item.
+                self.drop_chance = data
+            else:
+                # Should be the name of the item.
+                self.item_name = data
+        if self.item_name and self.drop_chance:
+            self.storage[self.enemy_name][self.mod_drop_chance].append({"item_name": self.item_name,
+                                                                        "drop_chance": self.drop_chance})
+            self.item_name = ""
+            self.drop_chance = ""
 
     def error(self, message):
         print("ERROR:", message)
