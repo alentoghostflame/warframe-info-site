@@ -31,7 +31,7 @@ class ObjectStorage:
 
 class DropTableReader(HTMLParser):
     """
-    This class reads and translates data from HTML downloaded from the offical Warframe drop tables at
+    This class reads and translates data from HTML downloaded from the official Warframe drop tables at
     "https://n8k6e2y6.ssl.hwcdn.net/repos/hnfvc0o3jnfvc873njb03enrf56.html"
     into data usable by the warframe info site.
     """
@@ -39,17 +39,15 @@ class DropTableReader(HTMLParser):
         HTMLParser.__init__(self)
         """ Constant names for various things. """
         self.DROP_CHANCE_RARITY_NAMES: tuple = ("Very Common", "Common", "Uncommon", "Rare", "Ultra Rare", "Legendary")
-        self.ROTATION_NAMES: tuple = ("Rotation A", "Rotation B", "Rotation C")
-        self.MISSION_TYPE_NAMES: tuple = ("Survival", "Defense", "Rescue", "Capture", "Caches", "Assassination",
-                                          "Exterminate", "Interception", "Spy", "Excavation", "Disruption",
-                                          "Sabotage", "Pursuit", "Conclave", "Defection", "Arena", "Infested Salvage",
-                                          "Rush", "Sanctuary Onslaught")
+        self.ROTATION_NAMES: tuple = ("Rotation A", "Rotation B", "Rotation C", "Bounty Completion", "First Completion",
+                                      "Subsequent Completions")
         """ Specific storage dictionaries. """
         self.mission_storage: dict = {}
         self.relic_storage: dict = {}
         self.key_mission_storage: dict = {}
         self.dynamic_mission_storage: dict = {}
         # Dynamic mission storage includes sorties
+        self.open_world_mission_storage: dict = {}
         self.enemy_storage: dict = {}
         self.mod_storage: dict = {}
 
@@ -60,6 +58,7 @@ class DropTableReader(HTMLParser):
         """ Temporary tags assigned and used by the various handlers. """
         self.temp_header_1: str = ""  # Used as the mission location, mission name, or relic name typically.
         self.temp_header_2: str = ""  # Used as the rotation name typically.
+        self.temp_header_3: str = ""  # Used as the name of the stage typically.
         self.temp_item_name: str = ""  # Used as the name of the item being dropped.
         self.temp_drop_chance: str = ""  # Used as the chance for the item to be dropped.
 
@@ -70,7 +69,8 @@ class DropTableReader(HTMLParser):
         """
         return {"missions": self.mission_storage, "relics": self.relic_storage,
                 "key_missions": self.key_mission_storage, "dynamic_missions": self.dynamic_mission_storage,
-                "enemies": self.enemy_storage, "mods": self.mod_storage}
+                "enemies": self.enemy_storage, "mods": self.mod_storage,
+                "open_world_missions": self.open_world_mission_storage}
 
     def read_file(self, file_path: str):
         """
@@ -102,23 +102,54 @@ class DropTableReader(HTMLParser):
         """
         if data.rstrip():
             if self.temp_section == "missionRewards":
-                self.name_rotation_mission_handler(self.mission_storage, data)
+                self.double_header_handler(self.mission_storage, data)
             elif self.temp_section == "relicRewards":
-                self.relic_handler(data)
+                self.single_header_handler(self.relic_storage, data)
             elif self.temp_section == "keyRewards":
-                self.name_rotation_mission_handler(self.key_mission_storage, data)
+                self.double_header_handler(self.key_mission_storage, data)
             elif self.temp_section == "transientRewards" or self.temp_section == "sortieRewards":
-                self.name_rotation_mission_handler(self.dynamic_mission_storage, data)
+                self.double_header_handler(self.dynamic_mission_storage, data)
+            elif self.temp_section == "cetusRewards" or self.temp_section == "solarisRewards":
+                self.triple_header_handler(self.open_world_mission_storage, data)
 
     def handle_endtag(self, tag):
+        """
+        Nothing to see here, move along.
+        :param tag: A string with the data inside the tag being read.
+        :return:
+        """
         pass
 
     def error(self, message):
         print("A BASE ERROR HAS OCCURRED:", message)
 
+    def single_header_handler(self, storage_location: dict, data: str):
+        """
+        The relic handler. Handles relic drop data in the following format:
+        Name of Relic (Rarity upgrade level)
+        Item that can drop              Rarity of item with percent
+        Item that can drop 2            Rarity of item with percent
 
+        No rotations/2nd level header. It goes the name and rarity of the relic, then immediately to the items that can
+        drop.
+        :param storage_location: Dictionary object to put data inside
+        :param data: A string with the data inside the tag being read.
+        :return:
+        """
+        if self.temp_tag == "th":
+            # if "Relic" in data:
+            self.header_1_handler(storage_location, data, [])
+            # else:
+            #     print("SINGLE HEADER HANDLER ISSUE:", data)
+        if self.temp_tag == "td":
+            if any(substring in data for substring in self.DROP_CHANCE_RARITY_NAMES):
+                self.temp_drop_chance = data
+            else:  # Should be the name of the item.
+                self.temp_item_name = data
+        if self.temp_item_name and self.temp_drop_chance:
+            self.item_and_drop_chance_handler(storage_location[self.temp_header_1])
 
-    def name_rotation_mission_handler(self, storage_location: dict, data: str):
+    def double_header_handler(self, storage_location: dict, data: str):
         """
         A handler that assumes the following:
             The mission name or location is in a th tag;
@@ -158,30 +189,22 @@ class DropTableReader(HTMLParser):
         if self.temp_item_name and self.temp_drop_chance:
             self.item_and_drop_chance_handler(storage_location[self.temp_header_1][self.temp_header_2])
 
-    def relic_handler(self, data: str):
-        """
-        The relic handler. Handles relic drop data in the following format:
-        Name of Relic (Rarity upgrade level)
-        Item that can drop              Rarity of item with percent
-        Item that can drop 2            Rarity of item with percent
-
-        No rotations/2nd level header. It goes the name and rarity of the relic, then immediately to the items that can
-        drop.
-        :param data: A string with the data inside the tag being read.
-        :return:
-        """
+    def triple_header_handler(self, storage_location: dict, data: str):
         if self.temp_tag == "th":
-            if "Relic" in data:
-                self.header_1_handler(self.relic_storage, data, [])
+            if any(substring in data for substring in self.ROTATION_NAMES):
+                self.header_2_handler(storage_location, data, {})
+            elif "Stage" in data:
+                self.header_3_handler(storage_location, data, [])
             else:
-                print("RELIC HANDLER ISSUE:", data)
-        if self.temp_tag == "td":
+                self.header_1_handler(storage_location, data, {})
+        elif self.temp_tag == "td":
             if any(substring in data for substring in self.DROP_CHANCE_RARITY_NAMES):
                 self.temp_drop_chance = data
-            else:  # Should be the name of the item.
+            else:
                 self.temp_item_name = data
         if self.temp_item_name and self.temp_drop_chance:
-            self.item_and_drop_chance_handler(self.relic_storage[self.temp_header_1])
+            self.item_and_drop_chance_handler(storage_location[self.temp_header_1][self.temp_header_2]
+                                              [self.temp_header_3])
 
     def header_1_handler(self, storage: dict, data: str, set_type, create_default: bool = False, default_type=None):
         """
@@ -210,6 +233,10 @@ class DropTableReader(HTMLParser):
         """
         storage[self.temp_header_1][data] = set_type
         self.temp_header_2 = data
+
+    def header_3_handler(self, storage: dict, data: str, set_type):
+        storage[self.temp_header_1][self.temp_header_2][data] = set_type
+        self.temp_header_3 = data
 
     def item_and_drop_chance_handler(self, storage: list):
         """
