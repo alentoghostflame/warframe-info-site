@@ -29,153 +29,206 @@ class ObjectStorage:
         self.warframe_list.load(file_path)
 
 
-class DropTableParser(HTMLParser):
+class DropTableReader(HTMLParser):
+    """
+    This class reads and translates data from HTML downloaded from the offical Warframe drop tables at
+    "https://n8k6e2y6.ssl.hwcdn.net/repos/hnfvc0o3jnfvc873njb03enrf56.html"
+    into data usable by the warframe info site.
+    """
     def __init__(self):
         HTMLParser.__init__(self)
-        self.storage: dict = {}
-        self.basic_missions: set = set()
-        self.open_world_missions: set = set()
-        self.relics: set = set()
+        """ Constant names for various things. """
+        self.DROP_CHANCE_RARITY_NAMES: tuple = ("Very Common", "Common", "Uncommon", "Rare", "Ultra Rare", "Legendary")
+        self.ROTATION_NAMES: tuple = ("Rotation A", "Rotation B", "Rotation C")
+        self.MISSION_TYPE_NAMES: tuple = ("Survival", "Defense", "Rescue", "Capture", "Caches", "Assassination",
+                                          "Exterminate", "Interception", "Spy", "Excavation", "Disruption",
+                                          "Sabotage", "Pursuit", "Conclave", "Defection", "Arena", "Infested Salvage",
+                                          "Rush", "Sanctuary Onslaught")
+        """ Specific storage dictionaries. """
+        self.mission_storage: dict = {}
+        self.relic_storage: dict = {}
+        self.key_mission_storage: dict = {}
+        self.dynamic_mission_storage: dict = {}
+        # Dynamic mission storage includes sorties
+        self.enemy_storage: dict = {}
+        self.mod_storage: dict = {}
 
-        self.selected_type: str = ""
-
-        self.mission_location: str = ""
-        self.mission_rotation: str = "default"
-        self.mission_stage: str = "default"
-        self.mod_drop_chance: str = ""
-        self.enemy_name: str = ""
-
-        self.item_name: str = ""
-        self.drop_chance = ""
-
+        """ Temporary tags assigned by self.handle_starttag() and used in the handlers."""
         self.temp_tag: str = ""
+        self.temp_section: str = ""
+
+        """ Temporary tags assigned and used by the various handlers. """
+        self.temp_header_1: str = ""  # Used as the mission location, mission name, or relic name typically.
+        self.temp_header_2: str = ""  # Used as the rotation name typically.
+        self.temp_item_name: str = ""  # Used as the name of the item being dropped.
+        self.temp_drop_chance: str = ""  # Used as the chance for the item to be dropped.
+
+    def export_full(self) -> dict:
+        """
+        Export all the different storage dictionaries in a single dictionary. Good for exporting to a single YAML file.
+        :return: A dictionary with all the internal storage dictionaries in it.
+        """
+        return {"missions": self.mission_storage, "relics": self.relic_storage,
+                "key_missions": self.key_mission_storage, "dynamic_missions": self.dynamic_mission_storage,
+                "enemies": self.enemy_storage, "mods": self.mod_storage}
 
     def read_file(self, file_path: str):
+        """
+        Shortcut to quickly feed a file into the parser.
+        :param file_path: String path to the file.
+        :return:
+        """
         self.feed(open(file_path, "r").read())
 
-    def handle_starttag(self, tag, attrs):
-        # print("Start tag: {}   Attributes: {}".format(tag, attrs))
-        if tag == "h3":
-            if attrs == [("id", "missionRewards")] or attrs == [("id", "keyRewards")] or \
-                    attrs == [("id", "transientRewards")] or attrs == [("id", "sortieRewards")]:
-                print("Basic mission encountered:", attrs)
-                self.selected_type = "basic_mission"
-            elif attrs == [("id", "cetusRewards")] or attrs == [("id", "solarisRewards")]:
-                print("Open world mission encountered:", attrs)
-                self.selected_type = "open_world_mission"
-            elif attrs == [("id", "modByAvatar")]:
-                self.selected_type = "enemy_mod_drops"
-            else:
-                self.selected_type = "other"
-
+    def handle_starttag(self, tag: str, attrs: list):
+        """
+        Runs when the parser encounters a starting HTML tag.
+        Assigns self.temp_tag to the latest tag found, and assigns self.temp_section when it reaches a new section of
+        the html page.
+        :param tag: The type of tag. Example: th, td, h3...
+        :param attrs: Attributes of the tag. Example: [], [("id", "transientRewards)]...
+        :return:
+        """
         self.temp_tag = tag
-
-    def handle_endtag(self, tag):
-        # print("End tag: {}".format(tag))
-        pass
+        if tag == "h3" and attrs and "id" in attrs[0]:
+            print("Section found:", attrs[0][1])
+            self.temp_section = attrs[0][1]
 
     def handle_data(self, data):
-        # print("Data: {}".format(data))
+        """
+        If the data isn't empty or pure whitespace, run a handler function based on what the current section is.
+        :param data:
+        :return:
+        """
         if data.rstrip():
-            if self.selected_type == "basic_mission":
-                self.handle_basic_mission(data)
-            elif self.selected_type == "open_world_mission":
-                self.handle_open_world_mission(data)
-            elif self.selected_type == "enemy_mod_drops":
-                self.handle_enemy_mod_drops(data)
+            if self.temp_section == "missionRewards":
+                self.name_rotation_mission_handler(self.mission_storage, data)
+            elif self.temp_section == "relicRewards":
+                self.relic_handler(data)
+            elif self.temp_section == "keyRewards":
+                self.name_rotation_mission_handler(self.key_mission_storage, data)
+            elif self.temp_section == "transientRewards" or self.temp_section == "sortieRewards":
+                self.name_rotation_mission_handler(self.dynamic_mission_storage, data)
 
-    def handle_basic_mission(self, data):
-        if self.temp_tag == "th":
-            if "Rotation" in data:
-                # Rotation in a mission; 1, 2, and 3 typically.
-                self.mission_rotation = data
-                self.storage[self.mission_location][self.mission_rotation] = []
-            else:
-                # Should be the name or location of the mission.
-                self.mission_location = data
-                self.basic_missions.add(self.mission_location)
-                self.storage[self.mission_location] = {}
-                self.storage[self.mission_location]["default"] = []
-                self.mission_rotation = "default"
-        elif self.temp_tag == "td":
-            if "%" in data:
-                # It's the drop chance of an item.
-                self.drop_chance = data
-            else:
-                # Should be the name of the item.
-                self.item_name = data
-        if self.item_name and self.drop_chance:
-            self.storage[self.mission_location][self.mission_rotation].append({"item_name": self.item_name,
-                                                                               "drop_chance": self.drop_chance})
-            self.item_name = ""
-            self.drop_chance = ""
-
-    def handle_open_world_mission(self, data: str):
-        if self.temp_tag == "th":
-            if "Cetus Bounty" in data or "Ghoul Bounty" in data or \
-                    "Orb Vallis Bounty" in data or "PROFIT-TAKER" in data:
-                # This should be the mission name/level. Example, Level 5 - 15 Cetus Bounty
-                self.mission_location = data
-                self.open_world_missions.add(self.mission_location)
-                self.storage[self.mission_location] = {}
-                # self.storage[self.mission_location]["default"] = []
-                # self.mission_rotation = "default"
-            elif "Rotation" in data or "Completion" in data:
-                # This should be the mission rotation. Example, Rotation B
-                self.mission_rotation = data
-                self.storage[self.mission_location][self.mission_rotation] = {}
-            elif "Stage" in data:
-                # This should be the stage of the mission. Example, Stage 4 of 5
-                self.mission_stage = data
-                self.storage[self.mission_location][self.mission_rotation][self.mission_stage] = []
-            else:
-                print("SOMETHING TERRIBLE HAPPENED:", data)
-        elif self.temp_tag == "td":
-            if "%" in data:
-                # It's the drop chance of an item.
-                self.drop_chance = data
-            else:
-                # Should be the name of the item.
-                self.item_name = data
-        if self.item_name and self.drop_chance:
-            self.storage[self.mission_location][self.mission_rotation][self.mission_stage].append(
-                {"item_name": self.item_name, "drop_chance": self.drop_chance})
-            self.item_name = ""
-            self.drop_chance = ""
-
-    def handle_enemy_mod_drops(self, data: str):
-        if self.temp_tag == "th":
-            if "%" in data:
-                # This should be the chance for a mod to drop.
-                self.mod_drop_chance = data
-                self.storage[self.enemy_name][self.mod_drop_chance] = []
-            else:
-                # This sould be the name of an enemy
-                self.enemy_name = data
-                self.storage[self.enemy_name] = {}
-        elif self.temp_tag == "td":
-            if "%" in data:
-                # It's the drop chance of an item.
-                self.drop_chance = data
-            else:
-                # Should be the name of the item.
-                self.item_name = data
-        if self.item_name and self.drop_chance:
-            self.storage[self.enemy_name][self.mod_drop_chance].append({"item_name": self.item_name,
-                                                                        "drop_chance": self.drop_chance})
-            self.item_name = ""
-            self.drop_chance = ""
+    def handle_endtag(self, tag):
+        pass
 
     def error(self, message):
-        print("ERROR:", message)
+        print("A BASE ERROR HAS OCCURRED:", message)
+
+
+
+    def name_rotation_mission_handler(self, storage_location: dict, data: str):
+        """
+        A handler that assumes the following:
+            The mission name or location is in a th tag;
+            the rotation name, assuming one is there, will be in a th tag;
+            the name of an item is in a td tag;
+            the drop chance of an item is in a td tag;
+            the amount of item names and item drop chance declarations are the same;
+            and that an item name will be read, then the matching drop chance will be read, or vice-versa.
+
+        Here is the following expected format.
+
+        Mission Planet/Mission Node (Mission Type)
+        Rotation Name
+        Item that can drop              Rarity of item with percent
+        Item that can drop 2            Rarity of item with percent
+
+        Notes:
+            There may not be a Rotation Name/2nd level header. For example, assassination missions don't have any
+                rotations.
+            The Mission Planet/Mission Node (Mission Type) header may be replaced with just a Mission Name header. For
+                example, Mercury/Apollodorus (Survival) VS Mutalist Alad V Assassinate.
+
+        :param storage_location: Dictionary object to put data inside.
+        :param data: A string with the data inside the tag being read.
+        :return:
+        """
+        if self.temp_tag == "th":
+            if any(substring in data for substring in self.ROTATION_NAMES):
+                self.header_2_handler(storage_location, data, [])
+            else:
+                self.header_1_handler(storage_location, data, {}, create_default=True, default_type=[])
+        elif self.temp_tag == "td":
+            if any(substring in data for substring in self.DROP_CHANCE_RARITY_NAMES):
+                self.temp_drop_chance = data
+            else:
+                self.temp_item_name = data
+        if self.temp_item_name and self.temp_drop_chance:
+            self.item_and_drop_chance_handler(storage_location[self.temp_header_1][self.temp_header_2])
+
+    def relic_handler(self, data: str):
+        """
+        The relic handler. Handles relic drop data in the following format:
+        Name of Relic (Rarity upgrade level)
+        Item that can drop              Rarity of item with percent
+        Item that can drop 2            Rarity of item with percent
+
+        No rotations/2nd level header. It goes the name and rarity of the relic, then immediately to the items that can
+        drop.
+        :param data: A string with the data inside the tag being read.
+        :return:
+        """
+        if self.temp_tag == "th":
+            if "Relic" in data:
+                self.header_1_handler(self.relic_storage, data, [])
+            else:
+                print("RELIC HANDLER ISSUE:", data)
+        if self.temp_tag == "td":
+            if any(substring in data for substring in self.DROP_CHANCE_RARITY_NAMES):
+                self.temp_drop_chance = data
+            else:  # Should be the name of the item.
+                self.temp_item_name = data
+        if self.temp_item_name and self.temp_drop_chance:
+            self.item_and_drop_chance_handler(self.relic_storage[self.temp_header_1])
+
+    def header_1_handler(self, storage: dict, data: str, set_type, create_default: bool = False, default_type=None):
+        """
+        Mostly created to stop copy and pasting code everywhere. This takes a dictionary, creates a key,
+        and sets that key equal to to set_type, preferably an empty list or dictionary.
+        :param storage: A dictionary, preferably the base level. Example, self.mission_storage.
+        :param data: Name of the key to create.
+        :param set_type: Object to make inside of the dictionary. Example, {} or []
+        :param create_default: Should a default be created.
+        :param default_type: Object that the default should be. Example, {} or []
+        :return:
+        """
+        storage[data] = set_type
+        self.temp_header_1 = data
+        if create_default:
+            self.header_2_handler(storage, "default", default_type)
+
+    def header_2_handler(self, storage: dict, data: str, set_type):
+        """
+        Mostly created to stop copy and pasting code everywhere. This takes a dictionary, creates a key inside of a
+        nested dictionary, and sets that key equal to to set_type, preferably an empty list or dictionary.
+        :param storage: A dictionary, preferably the base level. Example, self.mission_storage
+        :param data: Name of the key to create.
+        :param set_type: Object to make inside of the dictionary. Example, {} or []
+        :return:
+        """
+        storage[self.temp_header_1][data] = set_type
+        self.temp_header_2 = data
+
+    def item_and_drop_chance_handler(self, storage: list):
+        """
+        Appends a dictionary with self.temp_item_name and self.temp_drop_chance to the given storage variable.
+        :param storage: A list, preferably preferably one or two layers inside of a dictionary.
+        Example, self.mission_storage[self.temp_header_1][self.temp_header_2]
+        :return:
+        """
+        storage.append({"item_name": self.temp_item_name, "drop_chance": self.temp_drop_chance})
+        self.temp_item_name = ""
+        self.temp_drop_chance = ""
 
 
 """
 import yaml
 import class_logic
-test = class_logic.DropTableParser()
+test = class_logic.DropTableReader()
 test.read_file("Unminified_Warframe_DropTables.html")
-yaml.dump(test.storage, open("Test.yaml", "w"), default_flow_style=None)
+yaml.dump(test.export_full(), open("Test.yaml", "w"), default_flow_style=None)
 exit()
 """
 
