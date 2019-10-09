@@ -146,22 +146,20 @@ class DropTableReader(HTMLParser):
 
     def single_header_handler(self, storage_location: dict, data: str):
         """
-        The relic handler. Handles relic drop data in the following format:
-        Name of Relic (Rarity upgrade level)
-        Item that can drop              Rarity of item with percent
-        Item that can drop 2            Rarity of item with percent
+        This handler assumes that there is only one th tag, and that whatever is in that tag should be the first and
+        only header. An expected layout follows as such:
 
-        No rotations/2nd level header. It goes the name and rarity of the relic, then immediately to the items that can
-        drop.
+        Header 1 (in a th tag)
+        Item name 1             Percent chance to drop
+        Item name 2             Percent chance to drop
+
+
         :param storage_location: Dictionary object to put data inside
         :param data: A string with the data inside the tag being read.
         :return:
         """
         if self.temp_tag == "th":
-            # if "Relic" in data:
             self.header_1_handler(storage_location, data, [])
-            # else:
-            #     print("SINGLE HEADER HANDLER ISSUE:", data)
         elif self.temp_tag == "td":
             if any(substring in data for substring in self.DROP_CHANCE_RARITY_NAMES):
                 self.temp_drop_chance = data
@@ -172,9 +170,16 @@ class DropTableReader(HTMLParser):
 
     def single_header_triple_tag_handler(self, storage_location: dict, data: str):
         """
+        This handler assumes that, except for certain key words, whatever is in the th tag should be the first and only
+        header. An expected layout follows as such:
 
-        :param storage_location:
-        :param data:
+        Header 1 (in a th tag)
+        Ignored keyword (in th tag)     Ignored keyword (in th tag)     Ignored keyword (in th tag)
+        Item/Enemy name 1               Chance for the chance.          Rarity of item with percent
+        Item/Enemy name 2               Chance for the chance.          Rarity of item with percent
+
+        :param storage_location: Dictionary object to put data inside
+        :param data: A string with the data inside the tag being read.
         :return:
         """
         if self.temp_tag == "th" and data != "Enemy Name" and data != "Mod Drop Chance" and data != "Chance" and \
@@ -192,26 +197,17 @@ class DropTableReader(HTMLParser):
 
     def double_header_handler(self, storage_location: dict, data: str):
         """
-        A handler that assumes the following:
-            The mission name or location is in a th tag;
-            the rotation name, assuming one is there, will be in a th tag;
-            the name of an item is in a td tag;
-            the drop chance of an item is in a td tag;
-            the amount of item names and item drop chance declarations are the same;
-            and that an item name will be read, then the matching drop chance will be read, or vice-versa.
+        The most commonly used handler, expecting two headers instead of just one. Tests certain key words (located in
+        self.HEADER_2_NAMES) against the data given. If any of the key words are found, assign to header 2. Else, assign
+        to header 1. Here is the following expected format:
 
-        Here is the following expected format.
-
-        Mission Planet/Mission Node (Mission Type)
-        Rotation Name
+        Header 1 (in a th tag)
+        Header 2 (in th tag)
         Item that can drop              Rarity of item with percent
         Item that can drop 2            Rarity of item with percent
 
-        Notes:
-            There may not be a Rotation Name/2nd level header. For example, assassination missions don't have any
-                rotations.
-            The Mission Planet/Mission Node (Mission Type) header may be replaced with just a Mission Name header. For
-                example, Mercury/Apollodorus (Survival) VS Mutalist Alad V Assassinate.
+        Because there is not always a second header, a default is created as well, and data may be placed in there
+        instead.
 
         :param storage_location: Dictionary object to put data inside.
         :param data: A string with the data inside the tag being read.
@@ -232,9 +228,17 @@ class DropTableReader(HTMLParser):
 
     def triple_header_handler(self, storage_location: dict, data: str):
         """
+        This handler expects three headers, and uses key words to separate them. Self.HEADER_2_NAMES for header 2, the
+        word "Stage" for header 3, otherwise it is header 1. Here is the following expected format:
 
-        :param storage_location:
-        :param data:
+        Header 1
+        Header 2
+        Header 3
+        Item 1          Rarity of item with percent
+        Item 2          Rarity of item with percent
+
+        :param storage_location: Dictionary object to put data inside.
+        :param data: A string with the data inside the tag being read.
         :return:
         """
         if self.temp_tag == "th":
@@ -256,7 +260,8 @@ class DropTableReader(HTMLParser):
     def header_1_handler(self, storage: dict, data: str, set_type, create_default: bool = False, default_type=None):
         """
         Mostly created to stop copy and pasting code everywhere. This takes a dictionary, creates a key,
-        and sets that key equal to to set_type, preferably an empty list or dictionary.
+        and sets that key equal to to set_type (if it does not exist), preferably an empty list or dictionary.
+
         :param storage: A dictionary, preferably the base level. Example, self.mission_storage.
         :param data: Name of the key to create.
         :param set_type: Object to make inside of the dictionary. Example, {} or []
@@ -273,7 +278,9 @@ class DropTableReader(HTMLParser):
     def header_2_handler(self, storage: dict, data: str, set_type):
         """
         Mostly created to stop copy and pasting code everywhere. This takes a dictionary, creates a key inside of a
-        nested dictionary, and sets that key equal to to set_type, preferably an empty list or dictionary.
+        nested dictionary, and sets that key equal to to set_type (if it does not exist), preferably an empty list or
+        dictionary.
+
         :param storage: A dictionary, preferably the base level. Example, self.mission_storage
         :param data: Name of the key to create.
         :param set_type: Object to make inside of the dictionary. Example, {} or []
@@ -285,13 +292,16 @@ class DropTableReader(HTMLParser):
 
     def header_3_handler(self, storage: dict, data: str, set_type):
         """
+        Mostly created to stop copy and pasting code everywhere. This takes a dictionary, creates a key inside of a
+        nest dictionary inside of a nested dictionary, and sets that key equal to set_type (if it does not exist).
 
-        :param storage:
-        :param data:
-        :param set_type:
+        :param storage: A dictionary, preferably the base level. Example, self.mission_storage
+        :param data: Name of the key to create.
+        :param set_type: Object to make inside of the dictionary. Example, {} or []
         :return:
         """
-        storage[self.temp_header_1][self.temp_header_2][data] = set_type
+        if storage[self.temp_header_1][self.temp_header_2].get(data, None) is None:
+            storage[self.temp_header_1][self.temp_header_2][data] = set_type
         self.temp_header_3 = data
 
     def item_and_drop_chance_handler(self, storage: list):
@@ -307,8 +317,10 @@ class DropTableReader(HTMLParser):
 
     def triple_tag_handler(self, storage_location: list):
         """
+        Appends a dictionary with self.temp_item_name, self.temp_drop_chance, and self.temp_mod_drop_chance to the given
+        storage variable.
 
-        :param storage_location:
+        :param storage_location: A list, preferably preferably one or two layers inside of a dictionary.
         :return:
         """
         storage_location.append({"item_name": self.temp_item_name, "drop_chance": self.temp_drop_chance,
@@ -319,7 +331,7 @@ class DropTableReader(HTMLParser):
 
     def clear_tags_and_headers(self):
         """
-
+        A shortcut to wipe the temporary headers and item related variables.
         :return:
         """
         self.temp_header_1: str = ""
