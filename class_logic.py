@@ -38,9 +38,11 @@ class DropTableReader(HTMLParser):
     def __init__(self):
         HTMLParser.__init__(self)
         """ Constant names for various things. """
-        self.DROP_CHANCE_RARITY_NAMES: tuple = ("Very Common", "Common", "Uncommon", "Rare", "Ultra Rare", "Legendary")
-        self.ROTATION_NAMES: tuple = ("Rotation A", "Rotation B", "Rotation C", "Bounty Completion", "First Completion",
-                                      "Subsequent Completions")
+        self.DROP_CHANCE_RARITY_NAMES: tuple = ("Very Common (", "Common (", "Uncommon (", "Rare (", "Ultra Rare (",
+                                                "Legendary (")
+        self.HEADER_2_NAMES: tuple = ("Rotation A", "Rotation B", "Rotation C", "Bounty Completion", "First Completion",
+                                      "Subsequent Completions", "Mod Drop Chance", "Blueprint/Item Drop Chance",
+                                      "Resource Drop Chance", "Sigil Drop Chance", "Additional Item Drop Chance")
         """ Specific storage dictionaries. """
         self.mission_storage: dict = {}
         self.relic_storage: dict = {}
@@ -48,8 +50,9 @@ class DropTableReader(HTMLParser):
         self.dynamic_mission_storage: dict = {}
         # Dynamic mission storage includes sorties
         self.open_world_mission_storage: dict = {}
-        self.enemy_storage: dict = {}
+        self.enemy_drop_storage: dict = {}
         self.mod_storage: dict = {}
+        self.item_storage: dict = {}
 
         """ Temporary tags assigned by self.handle_starttag() and used in the handlers."""
         self.temp_tag: str = ""
@@ -61,6 +64,7 @@ class DropTableReader(HTMLParser):
         self.temp_header_3: str = ""  # Used as the name of the stage typically.
         self.temp_item_name: str = ""  # Used as the name of the item being dropped.
         self.temp_drop_chance: str = ""  # Used as the chance for the item to be dropped.
+        self.temp_mod_drop_chance: str = ""
 
     def export_full(self) -> dict:
         """
@@ -69,8 +73,8 @@ class DropTableReader(HTMLParser):
         """
         return {"missions": self.mission_storage, "relics": self.relic_storage,
                 "key_missions": self.key_mission_storage, "dynamic_missions": self.dynamic_mission_storage,
-                "enemies": self.enemy_storage, "mods": self.mod_storage,
-                "open_world_missions": self.open_world_mission_storage}
+                "enemy_drops": self.enemy_drop_storage, "mods": self.mod_storage,
+                "open_world_missions": self.open_world_mission_storage, "items": self.item_storage}
 
     def read_file(self, file_path: str):
         """
@@ -92,6 +96,7 @@ class DropTableReader(HTMLParser):
         self.temp_tag = tag
         if tag == "h3" and attrs and "id" in attrs[0]:
             print("Section found:", attrs[0][1])
+            self.clear_tags_and_headers()
             self.temp_section = attrs[0][1]
 
     def handle_data(self, data):
@@ -111,6 +116,22 @@ class DropTableReader(HTMLParser):
                 self.double_header_handler(self.dynamic_mission_storage, data)
             elif self.temp_section == "cetusRewards" or self.temp_section == "solarisRewards":
                 self.triple_header_handler(self.open_world_mission_storage, data)
+            elif self.temp_section == "modByAvatar":
+                self.double_header_handler(self.enemy_drop_storage, data)
+            elif self.temp_section == "modByDrop":
+                self.single_header_triple_tag_handler(self.mod_storage, data)
+            elif self.temp_section == "blueprintByAvatar":
+                self.double_header_handler(self.enemy_drop_storage, data)
+            elif self.temp_section == "blueprintByDrop":
+                self.single_header_triple_tag_handler(self.item_storage, data)
+            elif self.temp_section == "resourceByAvatar":
+                self.double_header_handler(self.enemy_drop_storage, data)
+            elif self.temp_section == "resourceByDrop":
+                self.single_header_triple_tag_handler(self.item_storage, data)
+            elif self.temp_section == "sigilByAvatar":
+                self.double_header_handler(self.enemy_drop_storage, data)
+            elif self.temp_section == "additionalItemByAvatar":
+                self.double_header_handler(self.enemy_drop_storage, data)
 
     def handle_endtag(self, tag):
         """
@@ -141,13 +162,33 @@ class DropTableReader(HTMLParser):
             self.header_1_handler(storage_location, data, [])
             # else:
             #     print("SINGLE HEADER HANDLER ISSUE:", data)
-        if self.temp_tag == "td":
+        elif self.temp_tag == "td":
             if any(substring in data for substring in self.DROP_CHANCE_RARITY_NAMES):
                 self.temp_drop_chance = data
             else:  # Should be the name of the item.
                 self.temp_item_name = data
         if self.temp_item_name and self.temp_drop_chance:
             self.item_and_drop_chance_handler(storage_location[self.temp_header_1])
+
+    def single_header_triple_tag_handler(self, storage_location: dict, data: str):
+        """
+
+        :param storage_location:
+        :param data:
+        :return:
+        """
+        if self.temp_tag == "th" and data != "Enemy Name" and data != "Mod Drop Chance" and data != "Chance" and \
+                data != "Blueprint/Item Drop Chance" and data != "Resource Drop Chance":
+            self.header_1_handler(storage_location, data, [])
+        elif self.temp_tag == "td":
+            if any(substring in data for substring in self.DROP_CHANCE_RARITY_NAMES):
+                self.temp_drop_chance = data
+            elif "%" in data:
+                self.temp_mod_drop_chance = data
+            else:
+                self.temp_item_name = data
+        if self.temp_item_name and self.temp_drop_chance and self.temp_mod_drop_chance:
+            self.triple_tag_handler(storage_location[self.temp_header_1])
 
     def double_header_handler(self, storage_location: dict, data: str):
         """
@@ -177,7 +218,7 @@ class DropTableReader(HTMLParser):
         :return:
         """
         if self.temp_tag == "th":
-            if any(substring in data for substring in self.ROTATION_NAMES):
+            if any(substring in data for substring in self.HEADER_2_NAMES):
                 self.header_2_handler(storage_location, data, [])
             else:
                 self.header_1_handler(storage_location, data, {}, create_default=True, default_type=[])
@@ -190,8 +231,14 @@ class DropTableReader(HTMLParser):
             self.item_and_drop_chance_handler(storage_location[self.temp_header_1][self.temp_header_2])
 
     def triple_header_handler(self, storage_location: dict, data: str):
+        """
+
+        :param storage_location:
+        :param data:
+        :return:
+        """
         if self.temp_tag == "th":
-            if any(substring in data for substring in self.ROTATION_NAMES):
+            if any(substring in data for substring in self.HEADER_2_NAMES):
                 self.header_2_handler(storage_location, data, {})
             elif "Stage" in data:
                 self.header_3_handler(storage_location, data, [])
@@ -217,7 +264,8 @@ class DropTableReader(HTMLParser):
         :param default_type: Object that the default should be. Example, {} or []
         :return:
         """
-        storage[data] = set_type
+        if storage.get(data, None) is None:
+            storage[data] = set_type
         self.temp_header_1 = data
         if create_default:
             self.header_2_handler(storage, "default", default_type)
@@ -231,10 +279,18 @@ class DropTableReader(HTMLParser):
         :param set_type: Object to make inside of the dictionary. Example, {} or []
         :return:
         """
-        storage[self.temp_header_1][data] = set_type
+        if storage[self.temp_header_1].get(data, None) is None:
+            storage[self.temp_header_1][data] = set_type
         self.temp_header_2 = data
 
     def header_3_handler(self, storage: dict, data: str, set_type):
+        """
+
+        :param storage:
+        :param data:
+        :param set_type:
+        :return:
+        """
         storage[self.temp_header_1][self.temp_header_2][data] = set_type
         self.temp_header_3 = data
 
@@ -249,6 +305,29 @@ class DropTableReader(HTMLParser):
         self.temp_item_name = ""
         self.temp_drop_chance = ""
 
+    def triple_tag_handler(self, storage_location: list):
+        """
+
+        :param storage_location:
+        :return:
+        """
+        storage_location.append({"item_name": self.temp_item_name, "drop_chance": self.temp_drop_chance,
+                                 "mod_drop_chance": self.temp_mod_drop_chance})
+        self.temp_item_name = ""
+        self.temp_drop_chance = ""
+        self.temp_mod_drop_chance = ""
+
+    def clear_tags_and_headers(self):
+        """
+
+        :return:
+        """
+        self.temp_header_1: str = ""
+        self.temp_header_2: str = ""
+        self.temp_header_3: str = ""
+        self.temp_item_name: str = ""
+        self.temp_drop_chance: str = ""
+        self.temp_mod_drop_chance: str = ""
 
 """
 import yaml
