@@ -1,2 +1,2 @@
 # warframe-info-site
-Uses Flask.
+Uses Flask and Pyyaml.
