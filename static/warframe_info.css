@@ -11,3 +11,16 @@ td:nth-child(odd), th:nth-child(odd) {
 .main_div {
     background-color: #282828;
 }
+h2 {
+    text-align: center;
+}
+.div_overflow_hidden.contain {
+    overflow: hidden;
+}
+.ability_div {
+    clear: both;
+    padding: 1em;
+    background-color: #343434;
+    border: 2px solid #0a0a0a;
+    //border-collapse: collapse;
+}

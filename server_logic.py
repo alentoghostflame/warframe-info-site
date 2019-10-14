@@ -1,5 +1,6 @@
-from flask import Flask, render_template, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, send_from_directory
 from class_logic import ObjectStorage
+import os
 
 
 website = Flask(__name__)

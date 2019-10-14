@@ -1,37 +1,85 @@
 {% extends "base.html" %}
 {% block title %} {{ warframe_data["name"] }} {% endblock %}
-{% block head %}
+{% block head -%}
     <link rel="stylesheet" href="{{ url_for('static', filename='warframe_info.css') }}">
-{% endblock %}
-{% block body %}
-    {% macro stat_table_row(name, dict_name) -%}
-        <tr>
-            <th>{{name}}</th>
-            {% for i in range(31) %}
-                {% if i != 0 and warframe_data[dict_name][i] == warframe_data[dict_name][i - 1] %}
+{%- endblock %}
+{% block body -%}
+    {% macro stat_table_row(name, stat_list) %}
+        <tr style="text-align: center;">
+            <th style="padding-left: 2px; padding-right: 2px; text-align: left;">{{name}}</th>
+            {% for i in range(stat_list|length) %}
+                {%- if i != 0 and stat_list[i] == stat_list[i - 1] and i != stat_list|length - 1 -%}
                     <td>---</td>
-                {% else %}
-                    <td>{{ warframe_data[dict_name][i] }}</td>
-                {% endif %}
-            {% endfor %}
+                {% else -%}
+                    <td style="padding-left: 2px; padding-right: 2px;">{{ stat_list[i] }}</td>
+                {% endif -%}
+            {%- endfor -%}
         </tr>
+    {%- endmacro -%}
+    {% macro ability_stat_table_row(effect_list, effect_type) -%}
+        {%- if effect_list|length > 0 and effect_list[0] != {} -%}
+            {%- for i in range(effect_list|length) -%}
+                {{ stat_table_row(" (" + effect_type + ") " + effect_list[i]["effect_name"], effect_list[i]["effect_stats"]) }}
+            {%- endfor -%}
+        {% else -%}
+            {{ stat_table_row("(" + effect_type + ") N/A", ["N/A", "N/A", "N/A", "N/A"]) }}
+        {%- endif -%}
     {%- endmacro %}
-    <div class="bigger_div">
-        {{ warframe_data["name"] }}
+    <div>
+
+        <h1 style="text-align: center;">
+            {{ warframe_data["name"] }}
+        </h1>
+        {% set links=["Description", "Stat Progression", "Abilities"] %}
+        {% include "table_of_contents.html" %}
+
     </div>
-    <div class="main_div">
-        {{ warframe_data["description"] }}
-        <br>
-        <table>
-            <tr>
-                <th>Rank</th>
-                {% for i in range(31) %}
-                    <th>{{i}}</th>
-                {% endfor %}
-            </tr>
-            {{ stat_table_row("Base Health", "base_health") }}
-            {{ stat_table_row("Base Shields", "base_shields") }}
-            {{ stat_table_row("Base Energy", "base_energy") }}
-        </table>
+    <div style="margin: 1em;">
+        <div id="Description">
+            <h2>Description</h2>
+            <p>In-game description: {{ warframe_data["in_game_description"] }}</p>
+            <p>Custom description: {{ warframe_data["player_made_description"] }}</p>
+        </div>
+        <div id="Stat Progression">
+            <h2>Stat Progression</h2>
+            <table>
+                <tr>
+                    <th>Rank</th>
+                    {% for i in range(31) -%}
+                        <th style="padding-left: 2px; padding-right: 2px;">{{i}}</th>
+                    {% endfor -%}
+                </tr>
+                {{ stat_table_row("Base Health", warframe_data["base_health"]) }}
+                {{ stat_table_row("Base Armor", warframe_data["base_armor"]) }}
+                {{ stat_table_row("Base Shields", warframe_data["base_shields"]) }}
+                {{ stat_table_row("Base Energy", warframe_data["base_energy"]) }}
+                {{ stat_table_row("Base Sprint Speed", warframe_data["base_sprint_speed"]) }}
+            </table>
+        </div>
+        <div id="Abilities" style="margin-top: 2em;">
+            <h2>Abilities</h2>
+            {%- for i in range(warframe_data["abilities"]|length) -%}
+            {%- set ability_data = warframe_data["abilities"][i] %}
+            <div class="ability_div">
+                <h3>{{ability_data["name"]}}</h3>
+                <table style="float: left; margin-right: 2em;">
+                    <tr>
+                        <th>Rank</th>
+                        {% for i in range(4) -%}
+                        <th style="padding-left: 2px; padding-right: 2px;">{{i}}</th>
+                        {% endfor -%}
+                    </tr>
+                    {{ ability_stat_table_row(ability_data["duration_effect"], "Duration") }}
+                    {{ ability_stat_table_row(ability_data["efficiency_effect"], "Efficiency") }}
+                    {{ ability_stat_table_row(ability_data["range_effect"], "Range") }}
+                    {{ ability_stat_table_row(ability_data["strength_effect"], "Strength") }}
+                    {{ ability_stat_table_row(ability_data["misc_effect"], "Misc") }}
+                </table>
+                <p>In-game Description: {{ ability_data["in_game_description"] }}</p>
+                <p>Custom Description: {{ ability_data["player_made_description"] }}</p>
+                <div style="clear: both;"></div>
+            </div>
+            {%- endfor %}
+        </div>
     </div>
-{% endblock %}
+{%- endblock %}

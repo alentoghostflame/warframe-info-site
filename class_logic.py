@@ -5,22 +5,29 @@ import yaml
 
 DEFAULT_BASIC_OBJECT: dict = {
     "name": "Default Name",
-    "description": "Default Description",
+    "in_game_description": "Default In-Game Description",
+    "player_description": "Default player description",
     "base_health": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
                     100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 200],
     "base_shields": [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50,
                      50, 50, 50, 50, 50, 75],
     "base_energy": [150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 150,
-                    150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 300]
+                    150, 150, 150, 150, 150, 150, 150, 150, 150, 150, 300],
+    "chassis_item_name": "Default chassis name",
+    "neuroptics_item_name": "Default neuroptics name",
+    "systems_item_name": "Default systems name"
 }
+OFFICIAL_WARFRAME_DROP_TABLE_HTML_FILE = "Unminified_Warframe_DropTables.html"
 
 
 class ObjectStorage:
     def __init__(self):
         self.warframe_list = WarframeList()
+        self.drop_table_reader = DropTableReader()
 
     def load_all(self):
         self.warframe_load_all()
+        self.drop_table_reader.read_file(OFFICIAL_WARFRAME_DROP_TABLE_HTML_FILE)
 
     def warframe_load_all(self):
         self.warframe_list.load_all()
@@ -341,6 +348,7 @@ class DropTableReader(HTMLParser):
         self.temp_drop_chance: str = ""
         self.temp_mod_drop_chance: str = ""
 
+
 """
 import yaml
 import class_logic
@@ -372,6 +380,83 @@ class WarframeList:
         self.warframes[file_path.split("/")[-1].rsplit(".", 1)[0]] = warframe
 
 
+class WarframeMaker:
+    def __init__(self):
+        self.ZERO_TO_30_TUPLE = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                                 24, 25, 26, 27, 28, 29, 30]
+        self.ZERO_TO_8_TUPLE = [1, 2, 3, 4, 5, 6, 7, 8]
+        self.ZERO_TO_3_TUPLE = [0, 1, 2, 3]
+        self.EMPTY_ABILITY_DICT = {"name": "", "in_game_description": "", "player_made_description": "",
+                                   "duration_effect": [{}, ],
+                                   "efficiency_effect": [{}, ],
+                                   "range_effect": [{}, ],
+                                   "strength_effect": [{}, ],
+                                   "misc_effect": [{}, ]}
+
+        self.name: str = ""
+        self.in_game_description: str = ""
+        self.player_made_description: str = ""
+        self.base_health: list = self.ZERO_TO_30_TUPLE
+        self.base_armor: list = self.ZERO_TO_30_TUPLE
+        self.base_shields: list = self.ZERO_TO_30_TUPLE
+        self.base_energy: list = self.ZERO_TO_30_TUPLE
+        self.base_sprint_speed: list = self.ZERO_TO_30_TUPLE
+        self.in_game_passive: str = ""
+        self.player_made_passive: str = ""
+        self.abilities = [self.EMPTY_ABILITY_DICT, ]
+        self.polarities = {"main": [], "aura": "", "exilus": ""}
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "in_game_description": self.in_game_description,
+                "player_made_description": self.player_made_description, "base_health": self.base_health,
+                "base_armor": self.base_armor, "base_shields": self.base_shields, "base_energy": self.base_energy,
+                "base_sprint_speed": self.base_sprint_speed, "in_game_passive": self.in_game_passive,
+                "player_made_passive": self.player_made_passive, "abilities": self.abilities,
+                "polarities": self.polarities}
+
+    def create(self):
+        print("Series of questions to populate a warframe yaml file.")
+        print("Don't enter anything to use the default in the brackets.")
+
+        self.name = ask_question("Name of the Warframe", "")
+        self.in_game_description = ask_question("In-game description", "")
+        self.player_made_description = ask_question("Custom player made description", "")
+        self.base_health = ask_question_for_length(31, "Set base health:", "    Rank")
+        self.base_armor = ask_question_for_length(31, "Set base armor:", "    Rank")
+        self.base_shields = ask_question_for_length(31, "Set base shields:", "    Rank")
+        self.base_energy = ask_question_for_length(31, "Set base energy:", "    Rank")
+        self.base_sprint_speed = ask_question_for_length(31, "Set base sprint speed:", "    Rank")
+        self.in_game_passive = ask_question("In-game description of passive", "")
+        self.player_made_passive = ask_question("Custom player made description of passive", "")
+        # ability_count = int(ask_question("How many abilities", 4))
+        ability_count = ask_question("How many abilities", 4, int)
+        print(ability_count)
+        self.abilities = []
+        for i in range(ability_count):
+            print("Ability #{}".format(i + 1))
+            ability_ph = self.EMPTY_ABILITY_DICT.copy()
+            ability_ph["name"] = ask_question("  Name of ability", "")
+            ability_ph["in_game_description"] = ask_question("  In-game description", "")
+            ability_ph["player_made_description"] = ask_question("  Custom player made description", "")
+            ability_ph["duration_effect"] = ask_question_about_ability("Duration")
+            ability_ph["efficiency_effect"] = ask_question_about_ability("Efficiency")
+            ability_ph["range_effect"] = ask_question_about_ability("Range")
+            ability_ph["strength_effect"] = ask_question_about_ability("Strength")
+            ability_ph["misc_effect"] = ask_question_about_ability("Misc")
+            self.abilities.append(ability_ph)
+
+    def export_to_file(self, file_name: str):
+        file = open("data/warframes/{}".format(file_name), "w")
+        yaml.dump(self.to_dict(), file, default_flow_style=None)
+
+
+"""
+from class_logic import WarframeMaker
+test = WarframeMaker()
+test.create()
+"""
+
+
 class BasicObject(dict):
     def __init__(self):
         dict.__init__(self)
@@ -383,4 +468,40 @@ class BasicObject(dict):
 
     def save_to_file(self, file_name: str):
         file = open(file_name, "w")
-        yaml.dump(self, file, default_flow_style=None)
+        yaml.dump(self.copy(), file, default_flow_style=None)
+
+
+def ask_question_about_ability(effect: str) -> list:
+    # effects_int = int(ask_question("  How many different things does {} effect".format(effect), 1))
+    effects_int = ask_question("  How many different things does {} affect".format(effect), 1, int)
+    effect_list = []
+    for x in range(effects_int):
+        print("  {} Effect #{}".format(effect, x + 1))
+        effect_name = ask_question("    {} Effect Name".format(effect), "PH")
+        effect_stats = ask_question_for_length(4, "    {} Effect Stats".format(effect), "      Rank")
+        effect_list.append({"effect_name": effect_name, "effect_stats": effect_stats})
+    return effect_list
+
+
+def ask_question_for_length(length: int, question_string: str, repeat_question_string: str) -> list:
+    print(question_string)
+    temp_list = []
+    for i in range(length):
+        if i != 0:
+            temp_list.append(ask_question("{} {}".format(repeat_question_string, i), temp_list[i - 1]))
+        else:
+            temp_list.append(ask_question("{} {}".format(repeat_question_string, i), 0))
+    return temp_list
+
+
+def ask_question(question_string: str, default, returned_type: type = str):
+    given = None
+    while given is None:
+        try:
+            given = returned_type(input(question_string + " [{}]: ".format(default)))
+        except ValueError:
+            print("Value seemed to be an incorrect type, try again?")
+    if given != "":
+        return given
+    else:
+        return default

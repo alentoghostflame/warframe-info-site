@@ -1,0 +1,11 @@
+<div>
+    <link rel="stylesheet" href="{{ url_for('static', filename='table_of_contents.css') }}">
+    <div class="toc_container">
+        <h3 class="toc_title">Contents</h3>
+        <ul class="toc_list">
+            {%- for link in links %}
+            <li><a href="#{{link}}">{{link}}</a></li>
+            {%- endfor %}
+        </ul>
+    </div>
+</div>

@@ -2,31 +2,36 @@
 
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+    <meta charset="utf-8">
 
-  <title>{% block title %}{% endblock %}</title>
-  <meta name="description" content="A site to provide information about the game called Warframe.">
-  <meta name="author" content="Alento Ghostflame">
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
-  {% block head %}
-  {% endblock %}
-
-</head>
-
-<body>
-    <ul class="nav_bar_list">
-        <li class="nav_bar_listing"><a href="../" class="nav_bar_link">Home</a></li>
-        <li class="nav_bar_listing"><a href="warframes" class="nav_bar_link">Warframes</a></li>
-        <li class="nav_bar_listing"><a href="weapons" class="nav_bar_link">Weapons</a></li>
-        <li class="nav_bar_listing"><a href="mods" class="nav_bar_link">Mods</a></li>
-    </ul>
-    {% block body %}
+    <title>{% block title %}{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A site to provide information about the game called Warframe.">
+    <meta name="author" content="Alento Ghostflame">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+    {% block head %}
     {% endblock %}
-    <div class="bigger_div">
-        <hr style="border: 5px solid #282828;">
-        This is a footer I guess
+</head>
+<body>
+    <nav>
+        <ul class="nav_bar_list">
+            <li class="nav_bar_listing"><a href="../" class="nav_bar_link">Home</a></li>
+            <li class="nav_bar_listing"><a href="/warframes" class="nav_bar_link">Warframes</a></li>
+            <li class="nav_bar_listing"><a href="/weapons" class="nav_bar_link">Weapons</a></li>
+            <li class="nav_bar_listing"><a href="/mods" class="nav_bar_link">Mods</a></li>
+        </ul>
+    </nav>
+    <div style="background-color: #282828; margin: 1em; padding: 1em;">
+        {%- block body %}
+        {%- endblock %}
     </div>
+    <footer>
+        <div>
+            <hr style="border: 5px solid #282828;">
+            <h2 style="text-align: center;">This is a footer I guess</h2>
+        </div>
+    </footer>
 </body>
 </html>
 

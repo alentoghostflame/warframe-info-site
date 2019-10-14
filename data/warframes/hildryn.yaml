@@ -1,0 +1,113 @@
+abilities:
+- duration_effect: []
+  efficiency_effect:
+  - effect_name: Drain / Shot
+    effect_stats: ['100', '100', '100', '100']
+  in_game_description: Charge and launch devastating bolts of fire.
+  misc_effect:
+  - effect_name: Drain
+    effect_stats: ['50', '50', '50', '50']
+  name: Balefire
+  player_made_description: PH
+  range_effect:
+  - effect_name: Explosion Radius
+    effect_stats: [1m, 2m, 3m, 3m]
+  strength_effect:
+  - effect_name: Damage
+    effect_stats: ['125', '250', '375', '500']
+- duration_effect:
+  - effect_name: Duration
+    effect_stats: [0.5s, 1s, 1.5s, 2s]
+  efficiency_effect: []
+  in_game_description: Pillage a percentage of Shields and Armor of nearby enemies
+    to replenish Hildryn's own Shields and Overshields. Also removes Status Effects
+    from Hildryn and her allies.
+  misc_effect:
+  - effect_name: Drain
+    effect_stats: ['150', '150', '150', '150']
+  name: Pillage
+  player_made_description: PH
+  range_effect:
+  - effect_name: Radius
+    effect_stats: [5m, 6m, 7m, 8m]
+  strength_effect:
+  - effect_name: Drain
+    effect_stats: [10%, 15%, 20%, 25%]
+- duration_effect:
+  - effect_name: Drain / Ally
+    effect_stats: ['5', '5', '5', '5']
+  - effect_name: Drain / Enemy
+    effect_stats: ['5', '5', '5', '5']
+  - effect_name: Shield Recharge
+    effect_stats: [20%, 40%, 60%, 80%]
+  efficiency_effect:
+  - effect_name: Drain / Ally
+    effect_stats: ['5', '5', '5', '5']
+  - effect_name: Drain / Enemy
+    effect_stats: ['25', '25', '25', '25']
+  in_game_description: Create a shield aura around allies. Enemies that approach shielded
+    allies will take damage.
+  misc_effect:
+  - effect_name: Drain
+    effect_stats: ['250', '250', '250', '250']
+  name: Haven
+  player_made_description: PH
+  range_effect:
+  - effect_name: Radius
+    effect_stats: [12m, 13m, 14m, 15m]
+  strength_effect:
+  - effect_name: Shield Capacity
+    effect_stats: ['200', '300', '400', '500']
+  - effect_name: Damage / Second
+    effect_stats: ['50', '100', '150', '200']
+- duration_effect:
+  - effect_name: Drain / Second
+    effect_stats: ['25', '25', '25', '25']
+  - effect_name: Drain / Enemy
+    effect_stats: ['25', '25', '25', '25']
+  efficiency_effect:
+  - effect_name: Drain / Second
+    effect_stats: ['25', '25', '25', '25']
+  - effect_name: Drain / Enemy
+    effect_stats: ['25', '25', '25', '25']
+  in_game_description: Take the skies and rain Balefire rockets down on the enemy.
+    Nearby enemies are blasted into the air where they will create an Energy Orb every
+    few seconds. When shields run out the enemies are smashed into the ground.
+  misc_effect:
+  - effect_name: Drain
+    effect_stats: ['100', '100', '100', '100']
+  name: Aegis Storm
+  player_made_description: PH
+  range_effect:
+  - effect_name: Radius
+    effect_stats: [12m, 13m, 14m, 15m]
+  strength_effect:
+  - effect_name: Damage / Second
+    effect_stats: ['50', '100', '150', '200']
+  - effect_name: Slam Damage
+    effect_stats: ['125', '250', '375', '500']
+base_armor: ['300', '300', '300', '300', '300', '300', '300', '300', '300', '300',
+  '300', '300', '300', '300', '300', '300', '300', '300', '300', '300', '300', '300',
+  '300', '300', '300', '300', '300', '300', '300', '300', '300']
+base_energy: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0]
+base_health: ['75', '75', '75', '75', '75', '75', '75', '75', '75', '75', '75', '75',
+  '75', '75', '75', '75', '75', '75', '75', '75', '75', '75', '75', '75', '75', '75',
+  '225', '225', '225', '225', '225']
+base_shields: ['450', '450', '450', '450', '450', '450', '450', '450', '450', '450',
+  '450', '450', '450', '450', '450', '450', '450', '450', '450', '450', '450', '450',
+  '450', '450', '450', '450', '450', '450', '1575', '1575', '1575']
+base_sprint_speed: ['1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0',
+  '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0',
+  '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0', '1.0']
+in_game_description: The best defense is a good offense. Hildryn draws from her Shields
+  to fuel her Abilities, while Energy recharges her Shields.
+in_game_passive: Become invulnerable for a brief moment after shields are depleted.
+  This ability is restored when shields fully recharge.
+name: Hildryn
+player_made_description: PH
+player_made_passive: PH
+polarities:
+  aura: ''
+  exilus: ''
+  main: []
