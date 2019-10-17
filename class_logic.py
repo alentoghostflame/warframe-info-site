@@ -392,58 +392,127 @@ class WarframeMaker:
                                    "range_effect": [{}, ],
                                    "strength_effect": [{}, ],
                                    "misc_effect": [{}, ]}
+        self.EMPTY_POLARITY_DICT = {"main": [], "aura": "", "exilus": ""}
 
-        self.name: str = ""
-        self.in_game_description: str = ""
-        self.player_made_description: str = ""
+        self.name: str = "PH"
+        self.in_game_description: str = "PH"
+        self.player_made_description: str = "PH"
         self.base_health: list = self.ZERO_TO_30_TUPLE
         self.base_armor: list = self.ZERO_TO_30_TUPLE
-        self.base_shields: list = self.ZERO_TO_30_TUPLE
+        self.base_shield: list = self.ZERO_TO_30_TUPLE
         self.base_energy: list = self.ZERO_TO_30_TUPLE
         self.base_sprint_speed: list = self.ZERO_TO_30_TUPLE
-        self.in_game_passive: str = ""
-        self.player_made_passive: str = ""
-        self.abilities = [self.EMPTY_ABILITY_DICT, ]
-        self.polarities = {"main": [], "aura": "", "exilus": ""}
+        self.in_game_passive: str = "PH"
+        self.player_made_passive: str = "PH"
+        self.abilities: list = [self.EMPTY_ABILITY_DICT, ]
+        self.polarities: dict = self.EMPTY_POLARITY_DICT
 
     def to_dict(self) -> dict:
         return {"name": self.name, "in_game_description": self.in_game_description,
                 "player_made_description": self.player_made_description, "base_health": self.base_health,
-                "base_armor": self.base_armor, "base_shields": self.base_shields, "base_energy": self.base_energy,
+                "base_armor": self.base_armor, "base_shields": self.base_shield, "base_energy": self.base_energy,
                 "base_sprint_speed": self.base_sprint_speed, "in_game_passive": self.in_game_passive,
                 "player_made_passive": self.player_made_passive, "abilities": self.abilities,
                 "polarities": self.polarities}
 
+    # def create(self):
+    #     print("Series of questions to populate a warframe yaml file.")
+    #     print("Don't enter anything to use the default in the brackets.")
+    #
+    #     self.name = ask_question("Name of the Warframe", "PH")
+    #     self.in_game_description = ask_question("In-game description", "PH")
+    #     self.player_made_description = ask_question("Custom player made description", "PH")
+    #     self.base_health = ask_question_for_length(31, "Set base health:", "    Rank")
+    #     self.base_armor = ask_question_for_length(31, "Set base armor:", "    Rank")
+    #     self.base_shield = ask_question_for_length(31, "Set base shields:", "    Rank")
+    #     self.base_energy = ask_question_for_length(31, "Set base energy:", "    Rank")
+    #     self.base_sprint_speed = ask_question_for_length(31, "Set base sprint speed:", "    Rank")
+    #     self.in_game_passive = ask_question("In-game description of passive", "PH")
+    #     self.player_made_passive = ask_question("Custom player made description of passive", "PH")
+    #
+    #     ability_count = ask_question("How many abilities", 4, int)
+    #     self.abilities = []
+    #     for i in range(ability_count):
+    #         print("Ability #{}".format(i + 1))
+    #         ability_ph = self.EMPTY_ABILITY_DICT.copy()
+    #         ability_ph["name"] = ask_question("  Name of ability", "PH")
+    #         ability_ph["in_game_description"] = ask_question("  In-game description", "PH")
+    #         ability_ph["player_made_description"] = ask_question("  Custom player made description", "PH")
+    #         ability_ph["duration_effect"] = ask_question_about_ability("Duration")
+    #         ability_ph["efficiency_effect"] = ask_question_about_ability("Efficiency")
+    #         ability_ph["range_effect"] = ask_question_about_ability("Range")
+    #         ability_ph["strength_effect"] = ask_question_about_ability("Strength")
+    #         ability_ph["misc_effect"] = ask_question_about_ability("Misc")
+    #         self.abilities.append(ability_ph)
+    #
+    #     polarity_count = ask_question("How many polarities, not including Aura or Exilus", 0, int)
+    #     self.polarities["main"] = ask_question_for_length(polarity_count, "Give name of polarities", "#")
+    #     self.polarities["aura"] = ask_question("Aura polarity, press enter for none.", "")
+    #     self.polarities["exilus"] = ask_question("Exilus polarity, press enter for none.", "")
+
     def create(self):
         print("Series of questions to populate a warframe yaml file.")
         print("Don't enter anything to use the default in the brackets.")
+        self.ask_basic()
+        self.ask_stats()
+        self.ask_passive()
+        self.ask_abilities()
+        self.ask_polarities()
+        print("Creation finished.")
 
-        self.name = ask_question("Name of the Warframe", "")
-        self.in_game_description = ask_question("In-game description", "")
-        self.player_made_description = ask_question("Custom player made description", "")
+    def ask_basic(self):
+        self.name = ask_question("Name of the Warframe", "PH")
+        self.in_game_description = ask_question("In-game description", "PH")
+        self.player_made_description = ask_question("Custom player made description", "PH")
+
+    def ask_stats(self):
         self.base_health = ask_question_for_length(31, "Set base health:", "    Rank")
         self.base_armor = ask_question_for_length(31, "Set base armor:", "    Rank")
-        self.base_shields = ask_question_for_length(31, "Set base shields:", "    Rank")
+        self.base_shield = ask_question_for_length(31, "Set base shields:", "    Rank")
         self.base_energy = ask_question_for_length(31, "Set base energy:", "    Rank")
         self.base_sprint_speed = ask_question_for_length(31, "Set base sprint speed:", "    Rank")
-        self.in_game_passive = ask_question("In-game description of passive", "")
-        self.player_made_passive = ask_question("Custom player made description of passive", "")
-        # ability_count = int(ask_question("How many abilities", 4))
+
+    def ask_passive(self):
+        self.in_game_passive = ask_question("In-game description of passive", "PH")
+        self.player_made_passive = ask_question("Custom player made description of passive", "PH")
+
+    def ask_abilities(self):
         ability_count = ask_question("How many abilities", 4, int)
-        print(ability_count)
         self.abilities = []
         for i in range(ability_count):
             print("Ability #{}".format(i + 1))
             ability_ph = self.EMPTY_ABILITY_DICT.copy()
-            ability_ph["name"] = ask_question("  Name of ability", "")
-            ability_ph["in_game_description"] = ask_question("  In-game description", "")
-            ability_ph["player_made_description"] = ask_question("  Custom player made description", "")
+            ability_ph["name"] = ask_question("  Name of ability", "PH")
+            ability_ph["in_game_description"] = ask_question("  In-game description", "PH")
+            ability_ph["player_made_description"] = ask_question("  Custom player made description", "PH")
             ability_ph["duration_effect"] = ask_question_about_ability("Duration")
             ability_ph["efficiency_effect"] = ask_question_about_ability("Efficiency")
             ability_ph["range_effect"] = ask_question_about_ability("Range")
             ability_ph["strength_effect"] = ask_question_about_ability("Strength")
             ability_ph["misc_effect"] = ask_question_about_ability("Misc")
             self.abilities.append(ability_ph)
+
+    def ask_polarities(self):
+        polarity_count = ask_question("How many polarities, not including Aura or Exilus", 0, int)
+        self.polarities["main"] = ask_question_for_length(polarity_count, "Give name of polarities", "#")
+        self.polarities["aura"] = ask_question("Aura polarity, press enter for none.", "")
+        self.polarities["exilus"] = ask_question("Exilus polarity, press enter for none.", "")
+
+    def import_from_file(self, file_name: str):
+        file = open("data/warframes/{}".format(file_name), "r")
+        data = yaml.full_load(file)
+        self.name = data.get("name", "PH")
+        self.in_game_description = data.get("in_game_description", "PH")
+        self.player_made_description = data.get("player_made_description", "PH")
+        self.base_health = data.get("base_health", self.ZERO_TO_30_TUPLE)
+        self.base_armor = data.get("base_armor", self.ZERO_TO_30_TUPLE)
+        self.base_shield = data.get("base_shield", self.ZERO_TO_30_TUPLE)
+        self.base_energy = data.get("base_energy", self.ZERO_TO_30_TUPLE)
+        self.base_sprint_speed = data.get("base_sprint_speed", self.ZERO_TO_30_TUPLE)
+        self.in_game_passive = data.get("in_game_passive", "PH")
+        self.player_made_passive = data.get("player_made_passive", "PH")
+        self.abilities = data.get("abilities", [self.EMPTY_ABILITY_DICT, ])
+        self.polarities = data.get("polarities", self.EMPTY_POLARITY_DICT)
 
     def export_to_file(self, file_name: str):
         file = open("data/warframes/{}".format(file_name), "w")
